@@ -6,6 +6,36 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <stdlib.h>
+
+//malloced data list
+//-inner args list
+
+//argc and argv represent the original(outer) arguments given to the debugger.
+char ** loadInnerArgs(int argc, char ** argv){
+	
+	char ** innerArgs;
+	// leave out arg[0], since this is the debugger's name
+	int numDebugeeArgs = argc -1;
+	//add 1 to size to include required NULL ending
+	int sizeOfArgArr = numDebugeeArgs + 1;
+
+
+	innerArgs = (char **)malloc(sizeof(char *) * sizeOfArgArr);
+	if(innerArgs == NULL){
+		perror("malloc args\n");
+		return NULL;
+	}
+
+	for(int i =0; i < numDebugeeArgs; i++){
+		innerArgs[i] = argv[i +1];
+	}
+
+	innerArgs[sizeOfArgArr - 1] = NULL;
+
+	return innerArgs;
+	
+}
 
 int main(int argc, char** argv){
 
@@ -26,15 +56,19 @@ int main(int argc, char** argv){
 	else{
 		//child process, to be debugged.
 		if(pid == 0){
-			if(ptrace(__ptrace_request.PTRACE_TRACEME,0,NULL,NULL) == 0){
+			
+			if(ptrace(PTRACE_TRACEME,0,NULL,NULL) == 0){
 				
 				const char * path = executablePath;
-				char * const argv[2] = {executablePath,NULL};
-				char * const envp[1] ={NULL};	
-				if(execve(path, argv, envp) == -1){
+				char * const envp[1] ={NULL}; // environmental variables not currently used.
+				char * const * args = loadInnerArgs(argc, argv);
+	
+				if(execve(path, args, envp) == -1){
 					perror("Failed to launch debuggee.\n");
+					free((void*)args);
 					return -1;
 				}
+				free((void *)args);
 				//on success a SIGTRAP signal is delivered to child
 
 			}
@@ -50,6 +84,7 @@ int main(int argc, char** argv){
 			//debuggee is stopped by SIGTRAP signal, ready to debug.
 			if(WIFSTOPPED(*wstatus)){
 				
+					
 			}
 			else{
 				if(kill(pid,SIGKILL) != 0){
@@ -61,11 +96,6 @@ int main(int argc, char** argv){
 
 
 	}
-
-
-
-
-
 
 
 
