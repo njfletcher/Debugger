@@ -80,13 +80,13 @@ int main(int argc, char** argv){
 		}
 		//parent process, the one doing the debugging.
 		else{
-			int * wstatus;	
-			waitpid(pid,wstatus,0);
-			printf("%i\n", *wstatus);
+			int wstatus = 0;	
+			waitpid(pid,&wstatus,0);
+			printf("%i\n", wstatus);
 			//debuggee is stopped by SIGTRAP signal, ready to debug.
-			if(WIFSTOPPED(*wstatus)){
+			if(WIFSTOPPED(wstatus)){
 				
-				printf("debugee started!\n");
+				printf("debugee started! pid %i \n", pid);
 					
 			}
 			else{
