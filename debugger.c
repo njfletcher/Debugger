@@ -29,8 +29,8 @@ char ** loadInnerArgs(int argc, char ** argv){
 
 	for(int i =0; i < numDebugeeArgs; i++){
 		innerArgs[i] = argv[i +1];
+			
 	}
-
 	innerArgs[sizeOfArgArr - 1] = NULL;
 
 	return innerArgs;
@@ -62,13 +62,14 @@ int main(int argc, char** argv){
 				const char * path = executablePath;
 				char * const envp[1] ={NULL}; // environmental variables not currently used.
 				char * const * args = loadInnerArgs(argc, argv);
-	
+				
 				if(execve(path, args, envp) == -1){
 					perror("Failed to launch debuggee.\n");
 					free((void*)args);
 					return -1;
 				}
-				free((void *)args);
+				//printf("done with exec\n");
+				//free((void *)args);
 				//on success a SIGTRAP signal is delivered to child
 
 			}
@@ -81,9 +82,11 @@ int main(int argc, char** argv){
 		else{
 			int * wstatus;	
 			waitpid(pid,wstatus,0);
+			printf("%i\n", *wstatus);
 			//debuggee is stopped by SIGTRAP signal, ready to debug.
 			if(WIFSTOPPED(*wstatus)){
 				
+				printf("debugee started!\n");
 					
 			}
 			else{
