@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <stdlib.h>
+#include "commandHelpers.h"
 
 //malloced data list
 //-inner args list
@@ -87,7 +88,9 @@ int main(int argc, char** argv){
 			if(WIFSTOPPED(wstatus)){
 				
 				printf("debugee started! pid %i \n", pid);
-					
+				struct user_regs_struct regs;
+				getRegs( pid, &regs);
+				printX8664Regs(regs);				
 			}
 			else{
 				if(kill(pid,SIGKILL) != 0){
