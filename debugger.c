@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include "commandHelpers.h"
-
+#include <string.h>
 //malloced data list
 //-inner args list
 
@@ -36,6 +36,52 @@ char ** loadInnerArgs(int argc, char ** argv){
 
 	return innerArgs;
 	
+}
+
+
+void commandLoop(pid_t pid){
+
+	char commandBuffer[100];
+
+	while(1){
+
+		scanf("%s", commandBuffer);
+			
+
+		if(strcmp(commandBuffer,"step") == 0){
+			
+			printf("Step taken\n");
+			singleStep(pid,NULL);
+			
+			int wstatus = 0;	
+			waitpid(pid,&wstatus,0);
+			printf("%i\n", wstatus);
+			//debuggee is stopped by SIGTRAP signal, ready to debug.
+			if(WIFSTOPPED(wstatus)){
+				
+				continue;	
+			}
+			else{
+				if(kill(pid,SIGKILL) != 0){
+					perror("Failed to kill debuggee.\n");
+					
+				}
+			}
+
+		}
+		if(strcmp(commandBuffer,"regs") == 0){
+
+			struct user_regs_struct regs;	
+			getRegs(pid, &regs);
+			printX8664Regs(regs);
+		}
+		if(strcmp(commandBuffer,"quit") == 0){
+
+			return;
+
+		}
+
+	}
 }
 
 int main(int argc, char** argv){
@@ -69,8 +115,6 @@ int main(int argc, char** argv){
 					free((void*)args);
 					return -1;
 				}
-				//printf("done with exec\n");
-				//free((void *)args);
 				//on success a SIGTRAP signal is delivered to child
 
 			}
@@ -88,9 +132,7 @@ int main(int argc, char** argv){
 			if(WIFSTOPPED(wstatus)){
 				
 				printf("debugee started! pid %i \n", pid);
-				struct user_regs_struct regs;
-				getRegs( pid, &regs);
-				printX8664Regs(regs);				
+				commandLoop(pid);				
 			}
 			else{
 				if(kill(pid,SIGKILL) != 0){
